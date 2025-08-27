@@ -1,19 +1,14 @@
 package org.example.app.repository;
 
 import org.example.app.entity.Task;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
-import java.util.Optional;
 
-public interface TaskRepository {
-    void create(Task task);
+public interface TaskRepository extends JpaRepository<Task, Long> {
 
-    void update(Task task);
+    List<Task> getTasksByTaskList_Id(long taskListId);
 
-    Optional<Task> findById(long id);
+    List<Task> findByTaskList_Board_User_Id(long userId);
 
-    List<Task> getTasksByUserId(long id);
-    List<Task> getTasksByListId(long id);
-
-    boolean delete(Task task);
 }

@@ -1,24 +1,23 @@
 package org.example.app.controller;
 
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.core.MediaType;
-import org.example.app.config.ServiceProvider;
-import org.example.app.dto.TaskDto;
+import lombok.AllArgsConstructor;
+import org.example.app.dto.TaskDTO;
 import org.example.app.service.TaskService;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-@Path("tasks")
+@RestController()
+@RequestMapping("/api/tasks")
+@AllArgsConstructor
 public class TaskController {
-    private final TaskService taskService = ServiceProvider.getInstance().getTaskService();
+    private final TaskService taskService;
 
-    @GET
-    @Path("/users/{id}")
-    @Produces(MediaType.APPLICATION_JSON)
-    public List<TaskDto> getTasksByUserId(@PathParam("id") long id) {
+    @GetMapping("/user/{id}")
+    public List<TaskDTO> getTasksByUserId(@PathVariable("id") long id) {
         return taskService.getTasksByUserId(id);
     }
 }

@@ -1,54 +1,71 @@
 package org.example.app.controller;
 
-import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
-import org.example.app.config.ServiceProvider;
+import org.example.app.dto.TaskDTO;
+import org.example.app.dto.UserDTO;
 import org.example.app.entity.User;
+import org.example.app.service.TaskService;
 import org.example.app.service.UserService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Path("/users")
+@RestController
+@RequestMapping("/api/users")
 public class UserController {
-    private final UserService userService = ServiceProvider.getInstance().getUserService();
 
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    public List<User> getAllUsers() {
+    private final UserService userService;
+    private final TaskService taskService;
+
+    public UserController(UserService userService, TaskService taskService) {
+        this.userService = userService;
+        this.taskService = taskService;
+    }
+
+    @GetMapping
+    public List<UserDTO> getAllUsers() {
+        System.out.println("controller");
         return userService.getAll();
     }
 
-    @GET
-    @Path("/{id}")
-    @Produces(MediaType.APPLICATION_JSON)
-    public User getUserById(@PathParam("id") long id) {
-        return userService.getById(id);
+    @GetMapping("/{id}")
+    public ResponseEntity<UserDTO> getUserById(@PathVariable("id") long id) {
+        UserDTO user = userService.findById(id);
+        if (user == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(user);
     }
 
-    @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    public void createUser(User user) {
-        userService.create(user);
+    @GetMapping("/{userId}/tasks")
+    public ResponseEntity<List<TaskDTO>> getAllTasksByUserId(@PathVariable("userId") long id) {
+        List<TaskDTO> tasks = taskService.getTasksByUserId(id);
+
+        if (tasks.isEmpty())
+            return ResponseEntity.noContent().build();
+
+        return ResponseEntity.ok(tasks);
     }
 
-    @DELETE
-    @Path("/{id}")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response deleteUserById(@PathParam("id") long id) {
-        boolean isDeleted = userService.deleteById(id);
-
-        if (!isDeleted)
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity("Пользователь с ID " + id + " не найден.")
-                    .build();
-
-        return Response.noContent().build();
+    @PostMapping
+    public ResponseEntity<UserDTO> createUser(@RequestBody User user) {
+        UserDTO created = userService.register(user);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(created);
     }
 
-    @PUT
-    @Consumes(MediaType.APPLICATION_JSON)
-    public void updateUser(User user) {
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteUserById(@PathVariable("id") long id) {
+        userService.deleteById(id);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping
+    public ResponseEntity<Void> updateUser(@RequestBody User user) {
         userService.update(user);
+        return ResponseEntity.noContent().build();
     }
 }

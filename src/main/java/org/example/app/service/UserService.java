@@ -1,51 +1,71 @@
 package org.example.app.service;
 
-
-import jakarta.ws.rs.NotFoundException;
+import org.example.app.dto.UserDTO;
+import org.example.app.enums.Role;
+import org.example.app.exception.NotFoundException;
 import org.example.app.entity.User;
+import org.example.app.mapper.UserMapper;
 import org.example.app.repository.UserRepository;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 
+@Service
+@Transactional(readOnly = true)
 public class UserService {
     private final UserRepository repository;
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final UserMapper userMapper;
+    private final PasswordEncoder encoder;
 
 
-    public UserService(UserRepository repository) {
+    public UserService(UserRepository repository, UserMapper userMapper, PasswordEncoder encoder) {
         this.repository = repository;
+        this.userMapper = userMapper;
+        this.encoder = encoder;
     }
 
-    public void create(User user) {
-        String hashedPassword = passwordEncoder.encode(user.getPassword());
-        user.setPassword(hashedPassword);
-        repository.create(user);
+    @Transactional
+    public UserDTO register(User user) {
+        user.setPassword(encoder.encode(user.getPassword()));
+        user.setRole(Role.USER);
+        return userMapper.toDTO(repository.save(user));
     }
 
-    public boolean verifyPassword(String rawPassword, String hashedPassword) {
-        return passwordEncoder.matches(rawPassword, hashedPassword);
+
+    public UserDTO findById(long id) {
+        User user = repository.findById(id)
+                .orElseThrow(() -> new NotFoundException("User with id " + id + " not found"));
+
+        return userMapper.toDTO(user);
     }
 
-    public User getById(long id) {
-        return repository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Пользователь с id " + id + " не найден"));
+    public UserDTO findByUsername(String username) {
+        User user = repository.findByUsername(username)
+                .orElseThrow(() -> new NotFoundException("User with username " + username + " not found"));
+
+        return userMapper.toDTO(user);
+
     }
 
-    public List<User> getAll() {
-        return repository.findAll();
+    public List<UserDTO> getAll() {
+        return userMapper.toDTOList(repository.findAll());
     }
 
-    public boolean deleteById(long id) {
-        return repository.deleteById(id);
+    @Transactional
+    public void deleteById(long id) {
+        repository.deleteById(id);
     }
 
+    @Transactional
     public void update(User user) {
         if (user.getPassword() != null && !user.getPassword().isEmpty()) {
-            String hashedPassword = passwordEncoder.encode(user.getPassword());
+            String hashedPassword = encoder.encode(user.getPassword());
             user.setPassword(hashedPassword);
         }
-        repository.update(user);
+        repository.save(user);
     }
+
+
 }
